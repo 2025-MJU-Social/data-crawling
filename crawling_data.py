@@ -162,6 +162,64 @@ def combine_duplicate_contents(contents):
     
     return list(content_dict.values())
 
+def scrape_daily_content():
+    """
+    남성과 여성을 위한 일간 콘텐츠 랭킹 데이터를 수집하는 함수
+    
+    Returns:
+        male_df: 남성 선호 콘텐츠 데이터프레임
+        female_df: 여성 선호 콘텐츠 데이터프레임
+    """
+    if not os.path.exists('./data'):
+        os.makedirs('./data')
+    
+    today_str = datetime.now().strftime('%y%m%d')
+    
+    try:
+        # 남성과 여성 데이터를 위한 파일 생성
+        male_contents = []
+        female_contents = []
+        
+        # 각 성별에 대해 모든 나이 그룹 순회
+        for gender_key, gender_value in GENDERS.items():
+            for age_key, age_value in AGE_GROUPS.items():
+                print(f"{age_value} {gender_value}의 일간 랭킹 스크래핑 중...")
+                
+                # 해당 나이 및 성별 조합에 대한 콘텐츠 가져오기
+                contents = scrape_ranking_data('', age_key, gender_key)
+                
+                # 적절한 성별 컬렉션에 추가
+                if contents:
+                    combined = combine_duplicate_contents(contents)
+                    print(f"{age_value} {gender_value}에서 {len(combined)}개 항목 발견")
+                    
+                    if gender_key == 'MALE':
+                        male_contents.extend(combined)
+                    else:  # FEMALE
+                        female_contents.extend(combined)
+        
+        # 남성 데이터 파일 저장
+        male_filename = f'./data/daily_MALE_{today_str}.csv'
+        male_df = None
+        if male_contents:
+            male_df = pd.DataFrame(male_contents)
+            male_df.to_csv(male_filename, index=False)
+            print(f"{len(male_contents)}개 항목을 {male_filename}에 저장했습니다.")
+        
+        # 여성 데이터 파일 저장
+        female_filename = f'./data/daily_FEMALE_{today_str}.csv'
+        female_df = None
+        if female_contents:
+            female_df = pd.DataFrame(female_contents)
+            female_df.to_csv(female_filename, index=False)
+            print(f"{len(female_contents)}개 항목을 {female_filename}에 저장했습니다.")
+            
+        return male_df, female_df
+
+    except Exception as e:
+        print(f"일간 콘텐츠 랭킹 수집 중 오류 발생: {str(e)}")
+        return None, None
+
 def main():
     if not os.path.exists('./data'):
         os.makedirs('./data')
